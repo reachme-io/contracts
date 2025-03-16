@@ -8,7 +8,7 @@
 
 #### Setup
 ```shell
-git clone git@github.com:reachkol/kol-contracts.git
+git clone git@github.com:reachme-io/contracts.git
 ```
 
 ```shell
