@@ -1,4 +1,4 @@
-# Reach Contracts
+# ReachMe Contracts
 
 ## Table of Contents
 - [Getting Started](#getting-started)
