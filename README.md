@@ -43,7 +43,6 @@ nano .env
 
 Edit .env file with live variables
 
-
 #### Deploy
 
 ```shell
@@ -61,13 +60,13 @@ npx hardhat run scripts/deploy.js --network bnb-testnet --verify
 npx hardhat flatten contracts/Reach.sol > Reach_Flattened.sol
 ```
 
-
 ## Contracts
 
 #### BSC Testnet
 
 |       Contract    | Address |
 |     ------------- | ------------- |
+| Authority.sol  | [0x14c0B26753d310ECf244cb2eDa84bCFdb8C4Eb9b](https://testnet.bscscan.com/address/0x14c0B26753d310ECf244cb2eDa84bCFdb8C4Eb9b) |
 | Reach.sol  | [0x14c0B26753d310ECf244cb2eDa84bCFdb8C4Eb9b](https://testnet.bscscan.com/address/0x14c0B26753d310ECf244cb2eDa84bCFdb8C4Eb9b) |
 
 
@@ -75,4 +74,5 @@ npx hardhat flatten contracts/Reach.sol > Reach_Flattened.sol
  
 |       Contract    | Address |
 |     ------------- | ------------- |
+| Authority.sol  | [TBA](https://bscscan.com/address/0x0000000000000000000000000000000000000000) |
 | Reach.sol  | [TBA](https://bscscan.com/address/0x0000000000000000000000000000000000000000) |
