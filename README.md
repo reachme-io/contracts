@@ -67,8 +67,8 @@ npx hardhat flatten contracts/Authority.sol > Authority_Flattened.sol
 
 |       Contract    | Address |
 |     ------------- | ------------- |
-| Authority.sol  | [0x14c0B26753d310ECf244cb2eDa84bCFdb8C4Eb9b](https://testnet.bscscan.com/address/0x14c0B26753d310ECf244cb2eDa84bCFdb8C4Eb9b) |
-| Reach.sol  | [0x14c0B26753d310ECf244cb2eDa84bCFdb8C4Eb9b](https://testnet.bscscan.com/address/0x14c0B26753d310ECf244cb2eDa84bCFdb8C4Eb9b) |
+| Authority.sol  | [0x09E8Fd5E3A9fF938d41A91da8d984BA5c10c3527](https://testnet.bscscan.com/address/0x09E8Fd5E3A9fF938d41A91da8d984BA5c10c3527) |
+| Reach.sol  | [0xf6C8E7017E3dC8fddB1503bBA5B1D476E66525fd](https://testnet.bscscan.com/address/0xf6C8E7017E3dC8fddB1503bBA5B1D476E66525fd) |
 
 
 #### BSC Mainnet
