@@ -152,6 +152,21 @@ contract Reach is Pausable, ReentrancyGuard {
         emit FeesReceiverUpdated(oldReceiver, _newReceiver);
     }
 
+    function updatePlatformFee(uint256 _newFee) external onlyRole(ADMIN_ROLE) {
+        require(_newFee >= 1 && _newFee <= 20, "Fee must be between 1 and 20"); // 1 to 20%
+        platformFee = _newFee;
+    }
+
+    function updateMinimumPayment(uint256 _newMinimum) external onlyRole(ADMIN_ROLE) {
+        require(_newMinimum >= 0.00001 ether, "Minimum payment must be greater than 0.00001 ether");
+        minimumPayment = _newMinimum;
+    }
+
+    function updateResponseTime(uint256 _newTime) external onlyRole(ADMIN_ROLE) {
+        require(_newTime >= 0, "Time must be greater than 0");
+        responseTime = _newTime;
+    }
+
     function getUserDeposits(address _user) external view returns (uint256[] memory) {
         return userDeposits[_user];
     }

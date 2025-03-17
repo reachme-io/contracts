@@ -1,4 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-verify");
 require('dotenv').config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -15,6 +16,9 @@ module.exports = {
       accounts: [process.env.ETHEREUM_PRIVATE_KEY],
       gasPrice: 2000000000,
     },
+  },
+  etherscan: {
+    apiKey: process.env.BSCSCAN_API_KEY,
   },
   defaultNetwork: 'hardhat'
 };
