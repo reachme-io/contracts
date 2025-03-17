@@ -49,15 +49,16 @@ Edit .env file with live variables
 npx hardhat run scripts/deploy.js --network bnb-testnet
 ```
 
-### Deploy AND Verify on Etherscan
+### Deploy AND Verify on BSCScan
 
 ```shell
 npx hardhat run scripts/deploy.js --network bnb-testnet --verify
 ```
 
-### Flatten Contracts
+### Flatten Contracts 
 ```shell
-npx hardhat flatten contracts/Reach.sol > Reach_Flattened.sol
+npx hardhat flatten contracts/Reach.sol > Reach_Flattened.sol && \
+npx hardhat flatten contracts/Authority.sol > Authority_Flattened.sol
 ```
 
 ## Contracts
