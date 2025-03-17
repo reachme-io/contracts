@@ -7,7 +7,7 @@ async function main() {
     const [deployer] = await ethers.getSigners();
     console.log("Deploying contracts with account:", deployer.address);
 
-    const FEES_RECEIVER_ADDRESS = '0x3ae99FdBB2d7A003E32ebE430Cb2C75fC48a3a95';
+    const FEES_RECEIVER_ADDRESS = '0x5644e67b9B613c6c9B678a48d8173Cc548D2FB27';
     const ENGINE_ADDRESS = '0x3ae99FdBB2d7A003E32ebE430Cb2C75fC48a3a95';
 
     // Deploy Authority first
