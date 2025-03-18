@@ -49,6 +49,12 @@ Edit .env file with live variables
 npx hardhat run scripts/deploy.js --network bnb-testnet
 ```
 
+#### Verify on BSCScan
+
+```shell
+npx hardhat verify --network bnb-testnet [contract_address] [constructor_arguments]
+```
+
 ### Deploy AND Verify on BSCScan
 
 ```shell
@@ -68,7 +74,7 @@ npx hardhat flatten contracts/Authority.sol > Authority_Flattened.sol
 |       Contract    | Address |
 |     ------------- | ------------- |
 | Authority.sol  | [0x09E8Fd5E3A9fF938d41A91da8d984BA5c10c3527](https://testnet.bscscan.com/address/0x09E8Fd5E3A9fF938d41A91da8d984BA5c10c3527) |
-| Reach.sol  | [0xf6C8E7017E3dC8fddB1503bBA5B1D476E66525fd](https://testnet.bscscan.com/address/0xf6C8E7017E3dC8fddB1503bBA5B1D476E66525fd) |
+| Reach.sol  | [0x7739f1c1056633A5F5FD9792d47C92eb53e123bB](https://testnet.bscscan.com/address/0x7739f1c1056633A5F5FD9792d47C92eb53e123bB) |
 
 
 #### BSC Mainnet

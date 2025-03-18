@@ -37,7 +37,7 @@ describe("Reach", function () {
         it("Should set the correct default values", async function () {
             expect(await reach.platformFee()).to.equal(10);
             expect(await reach.responseTime()).to.equal(5 * 24 * 60 * 60); // 5 days in seconds
-            expect(await reach.minimumPayment()).to.equal(ethers.parseEther("0.001"));
+            expect(await reach.minimumPayment()).to.equal(ethers.parseEther("0.00001"));
         });
     });
 
@@ -62,7 +62,7 @@ describe("Reach", function () {
         });
 
         it("Should revert if payment is below minimum", async function () {
-            const belowMinimum = ethers.parseEther("0.0005");
+            const belowMinimum = ethers.parseEther("0.00000005");
             await expect(reach.connect(user1).deposit("test", user2.address, { value: belowMinimum }))
                 .to.be.revertedWithCustomError(reach, "InsufficientPayment");
         });

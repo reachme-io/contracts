@@ -11,11 +11,16 @@ async function main() {
     const ENGINE_ADDRESS = '0x3ae99FdBB2d7A003E32ebE430Cb2C75fC48a3a95';
 
     // Deploy Authority first
+    // const Authority = await ethers.getContractFactory("ReachAuthority");
+    // const authority = await Authority.deploy(
+    //     deployer.address, // admin
+    //     ENGINE_ADDRESS  // engine
+    // );
+    // await authority.waitForDeployment();
+    // console.log("Authority deployed to:", await authority.getAddress());
+
     const Authority = await ethers.getContractFactory("ReachAuthority");
-    const authority = await Authority.deploy(
-        deployer.address, // admin
-        ENGINE_ADDRESS  // engine
-    );
+    const authority = await Authority.attach('0x09E8Fd5E3A9fF938d41A91da8d984BA5c10c3527');
     await authority.waitForDeployment();
     console.log("Authority deployed to:", await authority.getAddress());
 
