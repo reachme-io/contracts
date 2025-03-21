@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -36,6 +36,7 @@ contract Reach is Pausable, ReentrancyGuard {
 
     mapping(uint256 => Deposit) public deposits;
     mapping(address => uint256[]) public userDeposits;
+    mapping(string => bool) public identifierExists;
 
     event PaymentDeposited(
         uint256 indexed depositId,
@@ -69,6 +70,8 @@ contract Reach is Pausable, ReentrancyGuard {
     event ResponseTimeUpdated(uint256 oldTime, uint256 newTime);
 
     error PaymentDepositFailed();
+    error DuplicateIdentifier();
+    error SelfPay();
     error ZeroAddress();
     error InvalidDeposit();
     error AlreadyProcessed();
@@ -99,6 +102,8 @@ contract Reach is Pausable, ReentrancyGuard {
         if (msg.value < minimumPayment) revert InsufficientPayment();
         if (_kolAddress == address(0)) revert ZeroAddress();
         if (_kolAddress == msg.sender) revert("Cannot pay yourself");
+        if (identifierExists[_identifier]) revert DuplicateIdentifier();
+        identifierExists[_identifier] = true;
 
         depositId++;
 
@@ -270,6 +275,8 @@ contract Reach is Pausable, ReentrancyGuard {
         if (block.timestamp < _deposit.timestamp + MAX_RESPONSE_TIME + 14400)
             // 4 hours after max response time
             revert TimeWindowNotElapsed();
+        
+        if (_deposit.requester != msg.sender) revert Unauthorized();
 
         _deposit.refunded = true;
 
@@ -286,15 +293,15 @@ contract Reach is Pausable, ReentrancyGuard {
         );
     }
 
-    function recoverFunds(
-        uint256 _amount
-    ) external onlyRole(ADMIN_ROLE) nonReentrant {
-        uint256 balance = address(this).balance;
-        require(balance > 0, "No funds to recover");
+    // function recoverFunds(
+    //     uint256 _amount
+    // ) external onlyRole(ADMIN_ROLE) nonReentrant {
+    //     uint256 balance = address(this).balance;
+    //     require(balance > 0, "No funds to recover");
 
-        (bool sent, ) = msg.sender.call{value: _amount}("");
-        require(sent, "Recovery transfer failed");
+    //     (bool sent, ) = msg.sender.call{value: _amount}("");
+    //     require(sent, "Recovery transfer failed");
 
-        emit Withdrawal(msg.sender, _amount);
-    }
+    //     emit Withdrawal(msg.sender, _amount);
+    // }
 }

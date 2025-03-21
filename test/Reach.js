@@ -94,6 +94,18 @@ describe("Reach", function () {
             expect(feesReceiverAfter - feesReceiverBefore).to.equal(fee);
             expect(kolAfter - kolBefore).to.equal(kolInstantAmount);
         });
+
+        it("Should revert if identifier already exists", async function () {
+            const depositAmount = ethers.parseEther("1.0");
+            const identifier = "duplicate-identifier";
+            
+            // First deposit with the identifier should succeed
+            await reach.connect(user1).deposit(identifier, user2.address, { value: depositAmount });
+            
+            // Second deposit with the same identifier should fail
+            await expect(reach.connect(user1).deposit(identifier, user2.address, { value: depositAmount }))
+                .to.be.revertedWithCustomError(reach, "DuplicateIdentifier");
+        });
     });
 
     describe("Release Funds", function () {
@@ -254,15 +266,19 @@ describe("Reach", function () {
             await reach.connect(user1).deposit("test-recover", user2.address, { value: ethers.parseEther("1.0") });
             
             const contractBalance = await ethers.provider.getBalance(await reach.getAddress());
-            const adminBefore = await ethers.provider.getBalance(deployer.address);
+            const userBefore = await ethers.provider.getBalance(user1.address);
+
+            // Fast forward time past response time
+            await ethers.provider.send("evm_increaseTime", [6 * 24 * 60 * 60 + 1]);
+            await ethers.provider.send("evm_mine");
             
-            const tx = await reach.recoverFunds(contractBalance);
+            const tx = await reach.connect(user1).forceRefund(1);
             const receipt = await tx.wait();
             const gasUsed = receipt.gasUsed * receipt.gasPrice;
             
-            const adminAfter = await ethers.provider.getBalance(deployer.address);
+            const userAfter = await ethers.provider.getBalance(user1.address);
             
-            expect(adminAfter + gasUsed - adminBefore).to.equal(contractBalance);
+            expect(userAfter - userBefore + gasUsed).to.equal(contractBalance);
         });
     });
 
