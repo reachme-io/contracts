@@ -293,15 +293,15 @@ contract Reach is Pausable, ReentrancyGuard {
         );
     }
 
-    // function recoverFunds(
-    //     uint256 _amount
-    // ) external onlyRole(ADMIN_ROLE) nonReentrant {
-    //     uint256 balance = address(this).balance;
-    //     require(balance > 0, "No funds to recover");
+    function recoverFunds(
+        uint256 _amount
+    ) external onlyRole(ADMIN_ROLE) nonReentrant {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No funds to recover");
 
-    //     (bool sent, ) = msg.sender.call{value: _amount}("");
-    //     require(sent, "Recovery transfer failed");
+        (bool sent, ) = msg.sender.call{value: _amount}("");
+        require(sent, "Recovery transfer failed");
 
-    //     emit Withdrawal(msg.sender, _amount);
-    // }
+        emit Withdrawal(msg.sender, _amount);
+    }
 }
