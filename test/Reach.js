@@ -290,7 +290,7 @@ describe("Reach", function () {
         });
 
         it("Should return user deposits", async function () {
-            const userDeposits = await reach.getUserDeposits(user1.address);
+            const userDeposits = await reach.getUserDeposits(user1.address, 0, 10);
             expect(userDeposits.length).to.equal(2);
             expect(userDeposits[0]).to.equal(1);
             expect(userDeposits[1]).to.equal(2);
