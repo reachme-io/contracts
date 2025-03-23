@@ -71,7 +71,7 @@ contract Reach is Pausable, ReentrancyGuard {
 
     error PaymentDepositFailed();
     error DuplicateIdentifier();
-    error SelfPay();
+    error CannotPaySelf();
     error ZeroAddress();
     error InvalidDeposit();
     error AlreadyProcessed();
@@ -80,6 +80,10 @@ contract Reach is Pausable, ReentrancyGuard {
     error Unauthorized();
     error InvalidFeeRange();
     error InvalidResponseTime();
+    error FeeTransferFailed();
+    error KOLTransferFailed();
+    error RefundTransferFailed();
+    error RecoveryTransferFailed();
 
     modifier onlyRole(bytes32 role) {
         if (authority.hasRole(role, msg.sender)) {
@@ -101,7 +105,7 @@ contract Reach is Pausable, ReentrancyGuard {
     ) external payable whenNotPaused nonReentrant {
         if (msg.value < minimumPayment) revert InsufficientPayment();
         if (_kolAddress == address(0)) revert ZeroAddress();
-        if (_kolAddress == msg.sender) revert("Cannot pay yourself");
+        if (_kolAddress == msg.sender) revert CannotPaySelf();
         if (identifierExists[_identifier]) revert DuplicateIdentifier();
         identifierExists[_identifier] = true;
 
@@ -115,12 +119,12 @@ contract Reach is Pausable, ReentrancyGuard {
 
         // Send instant payment to KOL
         (bool feeSent, ) = feesReceiver.call{value: fee}("");
-        require(feeSent, "Fee transfer failed");
+        if (!feeSent) revert FeeTransferFailed();
 
         (bool kolSent, ) = payable(_kolAddress).call{value: kolInstantAmount}(
             ""
         );
-        require(kolSent, "KOL instant transfer failed");
+        if (!kolSent) revert KOLTransferFailed();
 
         // Store only escrow amount in deposit
         deposits[depositId] = Deposit({
@@ -160,10 +164,10 @@ contract Reach is Pausable, ReentrancyGuard {
         _deposit.released = true;
 
         (bool feeSent, ) = feesReceiver.call{value: fee}("");
-        require(feeSent, "Fee transfer failed");
+        if (!feeSent) revert FeeTransferFailed();
 
         (bool kolSent, ) = _deposit.recipient.call{value: kolAmount}("");
-        require(kolSent, "KOL transfer failed");
+        if (!kolSent) revert KOLTransferFailed();
 
         emit FundsReleased(
             _depositId,
@@ -188,7 +192,7 @@ contract Reach is Pausable, ReentrancyGuard {
         (bool requesterSent, ) = _deposit.requester.call{
             value: _deposit.escrowAmount
         }("");
-        require(requesterSent, "Requester transfer failed");
+        if (!requesterSent) revert RefundTransferFailed();
 
         emit RefundIssued(
             _depositId,
@@ -283,7 +287,7 @@ contract Reach is Pausable, ReentrancyGuard {
         (bool success, ) = _deposit.requester.call{
             value: _deposit.escrowAmount
         }("");
-        require(success, "Refund transfer failed");
+        if (!success) revert RefundTransferFailed();
 
         emit RefundIssued(
             _depositId,
@@ -300,7 +304,7 @@ contract Reach is Pausable, ReentrancyGuard {
         require(balance > 0, "No funds to recover");
 
         (bool sent, ) = msg.sender.call{value: _amount}("");
-        require(sent, "Recovery transfer failed");
+        if (!sent) revert RecoveryTransferFailed();
 
         emit Withdrawal(msg.sender, _amount);
     }

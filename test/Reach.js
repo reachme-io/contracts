@@ -74,7 +74,7 @@ describe("Reach", function () {
 
         it("Should revert if user tries to pay themselves", async function () {
             await expect(reach.connect(user1).deposit("test", user1.address, { value: ethers.parseEther("1.0") }))
-                .to.be.revertedWith("Cannot pay yourself");
+                .to.be.revertedWithCustomError(reach, "CannotPaySelf");
         });
 
         it("Should distribute funds correctly on deposit", async function () {
