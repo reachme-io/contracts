@@ -13,11 +13,11 @@ contract Reach is Pausable, ReentrancyGuard {
     uint256 public constant MAX_FEE_PERCENTAGE = 20;
     uint256 public constant MIN_FEE_PERCENTAGE = 1;
     uint256 public constant MIN_PAYMENT_THRESHOLD = 0.00001 ether;
-    uint256 public constant MAX_RESPONSE_TIME = 5 days;
+    uint256 public constant MAX_RESPONSE_TIME = 14 days;
 
     ReachAuthority public authority;
 
-    uint256 public platformFee = 10; // 10%
+    uint256 public platformFee = 10;
     uint256 public responseTime = 5 days;
     uint256 public minimumPayment = 0.00001 ether;
 
@@ -244,6 +244,12 @@ contract Reach is Pausable, ReentrancyGuard {
         uint256 limit
     ) external view returns (uint256[] memory) {
         uint256[] storage userDeps = userDeposits[_user];
+        
+        // Return empty array if offset is out of bounds
+        if (offset >= userDeps.length) {
+            return new uint256[](0);
+        }
+        
         uint256 length = limit > userDeps.length - offset
             ? userDeps.length - offset
             : limit;
@@ -276,7 +282,7 @@ contract Reach is Pausable, ReentrancyGuard {
         Deposit storage _deposit = deposits[_depositId];
 
         if (_deposit.released || _deposit.refunded) revert AlreadyProcessed();
-        if (block.timestamp < _deposit.timestamp + MAX_RESPONSE_TIME + 14400)
+        if (block.timestamp < (_deposit.timestamp + responseTime + 14400))
             // 4 hours after max response time
             revert TimeWindowNotElapsed();
         
