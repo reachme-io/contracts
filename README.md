@@ -10,8 +10,8 @@
  
 |       Contract    | Address |
 |     ------------- | ------------- |
-| Authority.sol  | [TBA](https://bscscan.com/address/0x0000000000000000000000000000000000000000) |
-| Reach.sol  | [TBA](https://bscscan.com/address/0x0000000000000000000000000000000000000000) |
+| Authority.sol  | [0xD15aefe5b91dA9d2D8143D2921496f6e64a282CE](https://bscscan.com/address/0xD15aefe5b91dA9d2D8143D2921496f6e64a282CE) |
+| Reach.sol  | [0x3ff200940a172AbB1c70646d500cA22cdBCEA915](https://bscscan.com/address/0x3ff200940a172AbB1c70646d500cA22cdBCEA915) |
 
 #### BNB Testnet
 
