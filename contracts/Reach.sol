@@ -19,7 +19,7 @@ contract Reach is Pausable, ReentrancyGuard {
 
     uint256 public platformFee = 10;
     uint256 public responseTime = 5 days;
-    uint256 public minimumPayment = 0.00001 ether;
+    uint256 public minimumPayment = 0.001 ether;
 
     uint256 public depositId;
     address public feesReceiver;

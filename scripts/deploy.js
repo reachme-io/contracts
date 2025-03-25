@@ -7,27 +7,20 @@ async function main() {
     const [deployer] = await ethers.getSigners();
     console.log("Deploying contracts with account:", deployer.address);
 
-    const FEES_RECEIVER_ADDRESS = '0x5644e67b9B613c6c9B678a48d8173Cc548D2FB27';
+    const MULTISIG_ADDRESS = '0x15D9e7F0Fb61763639cf678Be4ed41bD118839fb';
     const ENGINE_ADDRESS = '0x3ae99FdBB2d7A003E32ebE430Cb2C75fC48a3a95';
 
-    // Deploy Authority first
-    // const Authority = await ethers.getContractFactory("ReachAuthority");
-    // const authority = await Authority.deploy(
-    //     deployer.address, // admin
-    //     ENGINE_ADDRESS  // engine
-    // );
-    // await authority.waitForDeployment();
-    // console.log("Authority deployed to:", await authority.getAddress());
-
     const Authority = await ethers.getContractFactory("ReachAuthority");
-    const authority = await Authority.attach('0x09E8Fd5E3A9fF938d41A91da8d984BA5c10c3527');
+    const authority = await Authority.deploy(
+        MULTISIG_ADDRESS, // admin
+        ENGINE_ADDRESS  // engine
+    );
     await authority.waitForDeployment();
     console.log("Authority deployed to:", await authority.getAddress());
 
-    // Deploy Reach with Authority address
     const Reach = await ethers.getContractFactory("Reach");
     const reach = await Reach.deploy(
-        FEES_RECEIVER_ADDRESS,
+        MULTISIG_ADDRESS,
         await authority.getAddress()
     );
     await reach.waitForDeployment();
@@ -39,7 +32,7 @@ async function main() {
     console.log(`| Deployer \t\t | ${deployer.address} |`);
     console.log(`| Fee Reciver \t\t | ${FEES_RECEIVER_ADDRESS} |`);
     console.log(`| Engine  \t\t | ${ENGINE_ADDRESS} |`);
-    console.log(`| Admin \t\t | ${deployer.address} |`);
+    console.log(`| Admin \t\t | ${MULTISIG_ADDRESS} |`);
     console.log('-----------------------------------------------------------------------');
     console.log('| Contract \t\t | Address \t\t\t\t      |');
     console.log('-----------------------------------------------------------------------');

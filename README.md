@@ -1,8 +1,25 @@
 # ReachMe Contracts
 
 ## Table of Contents
-- [Getting Started](#getting-started)
 - [Contracts](#contracts)
+- [Getting Started](#getting-started)
+
+## Contracts
+
+#### BNB Mainnet
+ 
+|       Contract    | Address |
+|     ------------- | ------------- |
+| Authority.sol  | [TBA](https://bscscan.com/address/0x0000000000000000000000000000000000000000) |
+| Reach.sol  | [TBA](https://bscscan.com/address/0x0000000000000000000000000000000000000000) |
+
+#### BNB Testnet
+
+|       Contract    | Address |
+|     ------------- | ------------- |
+| Authority.sol  | [0x09E8Fd5E3A9fF938d41A91da8d984BA5c10c3527](https://testnet.bscscan.com/address/0x09E8Fd5E3A9fF938d41A91da8d984BA5c10c3527) |
+| Reach.sol  | [0x7739f1c1056633A5F5FD9792d47C92eb53e123bB](https://testnet.bscscan.com/address/0x7739f1c1056633A5F5FD9792d47C92eb53e123bB) |
+
 
 ## Getting Started
 
@@ -67,19 +84,3 @@ npx hardhat flatten contracts/Reach.sol > Reach_Flattened.sol && \
 npx hardhat flatten contracts/Authority.sol > Authority_Flattened.sol
 ```
 
-## Contracts
-
-#### BSC Testnet
-
-|       Contract    | Address |
-|     ------------- | ------------- |
-| Authority.sol  | [0x09E8Fd5E3A9fF938d41A91da8d984BA5c10c3527](https://testnet.bscscan.com/address/0x09E8Fd5E3A9fF938d41A91da8d984BA5c10c3527) |
-| Reach.sol  | [0x7739f1c1056633A5F5FD9792d47C92eb53e123bB](https://testnet.bscscan.com/address/0x7739f1c1056633A5F5FD9792d47C92eb53e123bB) |
-
-
-#### BSC Mainnet
- 
-|       Contract    | Address |
-|     ------------- | ------------- |
-| Authority.sol  | [TBA](https://bscscan.com/address/0x0000000000000000000000000000000000000000) |
-| Reach.sol  | [TBA](https://bscscan.com/address/0x0000000000000000000000000000000000000000) |
