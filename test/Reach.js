@@ -1,12 +1,13 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-const SIGNER_ADDRESS = '0x3ae99FdBB2d7A003E32ebE430Cb2C75fC48a3a95'
-const FEES_RECEIVER_ADDRESS = '0x5644e67b9B613c6c9B678a48d8173Cc548D2FB27'
+const SIGNER_ADDRESS = '0xb3842098899ca72b724732CCb83D78Fa025A331c'
+const FEES_RECEIVER_ADDRESS = '0xb3842098899ca72b724732CCb83D78Fa025A331c'
 
 describe("Reach", function () {
     let authority, reach;
     let deployer, treasuryAddress, user1, user2;
+
 
     beforeEach(async () => {
         [deployer, treasuryAddress, user1, user2] = await ethers.getSigners();
@@ -37,7 +38,7 @@ describe("Reach", function () {
         it("Should set the correct default values", async function () {
             expect(await reach.platformFee()).to.equal(10);
             expect(await reach.responseTime()).to.equal(5 * 24 * 60 * 60); // 5 days in seconds
-            expect(await reach.minimumPayment()).to.equal(ethers.parseEther("0.00001"));
+            expect(await reach.minimumPayment()).to.equal(ethers.parseEther("0.001"));
         });
     });
 
@@ -491,7 +492,7 @@ describe("Reach", function () {
         });
         
         it("Should correctly calculate fees for very small amounts", async function () {
-            const smallAmount = ethers.parseEther("0.0001");
+            const smallAmount = ethers.parseEther("0.001");
             const instantAmount = smallAmount / 2n;
             const feePercentage = await reach.platformFee();
             const expectedFee = (instantAmount * BigInt(feePercentage)) / 100n;
@@ -684,7 +685,7 @@ describe("Reach", function () {
 
     describe("Edge Cases and Security", function () {
         it("Should handle very small payments that might result in zero fees", async function () {
-            const tinyAmount = ethers.parseEther("0.00001"); // Minimum payment
+            const tinyAmount = ethers.parseEther("0.001"); // Minimum payment
             
             await reach.connect(user1).deposit("tiny-payment", user2.address, { value: tinyAmount });
             

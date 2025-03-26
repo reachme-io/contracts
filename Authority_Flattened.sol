@@ -408,7 +408,7 @@ abstract contract AccessControl is Context, IAccessControl, ERC165 {
 // File contracts/Authority.sol
 
 // Original license: SPDX_License_Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.24;
 
 contract ReachAuthority is AccessControl {
 

@@ -529,7 +529,7 @@ abstract contract Pausable is Context {
 // File contracts/Authority.sol
 
 // Original license: SPDX_License_Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.24;
 
 contract ReachAuthority is AccessControl {
 
@@ -639,7 +639,7 @@ abstract contract ReentrancyGuard {
 // File contracts/Reach.sol
 
 // Original license: SPDX_License_Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 
 
@@ -651,13 +651,13 @@ contract Reach is Pausable, ReentrancyGuard {
     uint256 public constant MAX_FEE_PERCENTAGE = 20;
     uint256 public constant MIN_FEE_PERCENTAGE = 1;
     uint256 public constant MIN_PAYMENT_THRESHOLD = 0.00001 ether;
-    uint256 public constant MAX_RESPONSE_TIME = 5 days;
+    uint256 public constant MAX_RESPONSE_TIME = 14 days;
 
     ReachAuthority public authority;
 
-    uint256 public platformFee = 10; // 10%
+    uint256 public platformFee = 10;
     uint256 public responseTime = 5 days;
-    uint256 public minimumPayment = 0.00001 ether;
+    uint256 public minimumPayment = 0.001 ether;
 
     uint256 public depositId;
     address public feesReceiver;
@@ -674,6 +674,7 @@ contract Reach is Pausable, ReentrancyGuard {
 
     mapping(uint256 => Deposit) public deposits;
     mapping(address => uint256[]) public userDeposits;
+    mapping(string => bool) public identifierExists;
 
     event PaymentDeposited(
         uint256 indexed depositId,
@@ -707,6 +708,8 @@ contract Reach is Pausable, ReentrancyGuard {
     event ResponseTimeUpdated(uint256 oldTime, uint256 newTime);
 
     error PaymentDepositFailed();
+    error DuplicateIdentifier();
+    error CannotPaySelf();
     error ZeroAddress();
     error InvalidDeposit();
     error AlreadyProcessed();
@@ -715,6 +718,10 @@ contract Reach is Pausable, ReentrancyGuard {
     error Unauthorized();
     error InvalidFeeRange();
     error InvalidResponseTime();
+    error FeeTransferFailed();
+    error KOLTransferFailed();
+    error RefundTransferFailed();
+    error RecoveryTransferFailed();
 
     modifier onlyRole(bytes32 role) {
         if (authority.hasRole(role, msg.sender)) {
@@ -736,7 +743,9 @@ contract Reach is Pausable, ReentrancyGuard {
     ) external payable whenNotPaused nonReentrant {
         if (msg.value < minimumPayment) revert InsufficientPayment();
         if (_kolAddress == address(0)) revert ZeroAddress();
-        if (_kolAddress == msg.sender) revert("Cannot pay yourself");
+        if (_kolAddress == msg.sender) revert CannotPaySelf();
+        if (identifierExists[_identifier]) revert DuplicateIdentifier();
+        identifierExists[_identifier] = true;
 
         depositId++;
 
@@ -748,12 +757,12 @@ contract Reach is Pausable, ReentrancyGuard {
 
         // Send instant payment to KOL
         (bool feeSent, ) = feesReceiver.call{value: fee}("");
-        require(feeSent, "Fee transfer failed");
+        if (!feeSent) revert FeeTransferFailed();
 
         (bool kolSent, ) = payable(_kolAddress).call{value: kolInstantAmount}(
             ""
         );
-        require(kolSent, "KOL instant transfer failed");
+        if (!kolSent) revert KOLTransferFailed();
 
         // Store only escrow amount in deposit
         deposits[depositId] = Deposit({
@@ -793,10 +802,10 @@ contract Reach is Pausable, ReentrancyGuard {
         _deposit.released = true;
 
         (bool feeSent, ) = feesReceiver.call{value: fee}("");
-        require(feeSent, "Fee transfer failed");
+        if (!feeSent) revert FeeTransferFailed();
 
         (bool kolSent, ) = _deposit.recipient.call{value: kolAmount}("");
-        require(kolSent, "KOL transfer failed");
+        if (!kolSent) revert KOLTransferFailed();
 
         emit FundsReleased(
             _depositId,
@@ -821,7 +830,7 @@ contract Reach is Pausable, ReentrancyGuard {
         (bool requesterSent, ) = _deposit.requester.call{
             value: _deposit.escrowAmount
         }("");
-        require(requesterSent, "Requester transfer failed");
+        if (!requesterSent) revert RefundTransferFailed();
 
         emit RefundIssued(
             _depositId,
@@ -873,6 +882,12 @@ contract Reach is Pausable, ReentrancyGuard {
         uint256 limit
     ) external view returns (uint256[] memory) {
         uint256[] storage userDeps = userDeposits[_user];
+        
+        // Return empty array if offset is out of bounds
+        if (offset >= userDeps.length) {
+            return new uint256[](0);
+        }
+        
         uint256 length = limit > userDeps.length - offset
             ? userDeps.length - offset
             : limit;
@@ -905,16 +920,18 @@ contract Reach is Pausable, ReentrancyGuard {
         Deposit storage _deposit = deposits[_depositId];
 
         if (_deposit.released || _deposit.refunded) revert AlreadyProcessed();
-        if (block.timestamp < _deposit.timestamp + MAX_RESPONSE_TIME + 14400)
+        if (block.timestamp < (_deposit.timestamp + responseTime + 14400))
             // 4 hours after max response time
             revert TimeWindowNotElapsed();
+        
+        if (_deposit.requester != msg.sender) revert Unauthorized();
 
         _deposit.refunded = true;
 
         (bool success, ) = _deposit.requester.call{
             value: _deposit.escrowAmount
         }("");
-        require(success, "Refund transfer failed");
+        if (!success) revert RefundTransferFailed();
 
         emit RefundIssued(
             _depositId,
@@ -931,7 +948,7 @@ contract Reach is Pausable, ReentrancyGuard {
         require(balance > 0, "No funds to recover");
 
         (bool sent, ) = msg.sender.call{value: _amount}("");
-        require(sent, "Recovery transfer failed");
+        if (!sent) revert RecoveryTransferFailed();
 
         emit Withdrawal(msg.sender, _amount);
     }
