@@ -13,6 +13,10 @@
 | Authority.sol  | [0xD15aefe5b91dA9d2D8143D2921496f6e64a282CE](https://bscscan.com/address/0xD15aefe5b91dA9d2D8143D2921496f6e64a282CE) |
 | Reach.sol  | [0x3ff200940a172AbB1c70646d500cA22cdBCEA915](https://bscscan.com/address/0x3ff200940a172AbB1c70646d500cA22cdBCEA915) |
 
+#### Audit
+
+[View Certik Report](https://github.com/reachme-io/contracts/blob/main/audit/certik_audit.pdf)
+
 #### BNB Testnet
 
 |       Contract    | Address |
