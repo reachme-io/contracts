@@ -5,11 +5,11 @@ const SIGNER_ADDRESS = '0xb3842098899ca72b724732CCb83D78Fa025A331c'
 const FEES_RECEIVER_ADDRESS = '0xb3842098899ca72b724732CCb83D78Fa025A331c'
 const PROOF_SIGNER_ADDRESS = '0x0000000000000000000000000000000000000000'
 
-async function generateSignature(domainSeparator, identifier, amount, kolAddress, requester, responseTime, kolFeePercentage, deadline, nonce, proofSigner) {
+async function generateSignature(domainSeparator, identifier, amount, kolAddress, requester, responseTime, kolFeePercentage, deadline, proofSigner) {
     const messageHash = ethers.keccak256(
         ethers.solidityPacked(
-            ["bytes32", "string", "uint256", "address", "address", "uint256", "uint256", "uint256", "uint256"],
-            [domainSeparator, identifier, amount, kolAddress, requester, responseTime, kolFeePercentage, deadline, nonce]
+            ["bytes32", "string", "uint256", "address", "address", "uint256", "uint256", "uint256"],
+            [domainSeparator, identifier, amount, kolAddress, requester, responseTime, kolFeePercentage, deadline]
         )
     );
 
@@ -27,7 +27,6 @@ describe("ReachV2", function () {
     let authority, reach;
     let deployer, treasuryAddress, proofSigner, user1, user2;
     let defaultResponseTime, defaultKolFee;
-    let nonceCounter = 1;
 
     beforeEach(async () => {
         [deployer, treasuryAddress, proofSigner, user1, user2] = await ethers.getSigners();
@@ -50,10 +49,10 @@ describe("ReachV2", function () {
     });
 
     // Helper function to simplify deposit calls in tests
-    async function makeDeposit(from, identifier, kolAddress, requesterAddress, amount) {
+    async function makeDeposit(from, baseIdentifier, kolAddress, requesterAddress, amount) {
+        const identifier = `${baseIdentifier}`; // Use the base identifier directly
         const currentBlockTime = await getCurrentBlockTimestamp();
         const deadline = currentBlockTime + 3600; // 1 hour from current block time
-        const nonce = nonceCounter++;
 
         const domainSeparator = await reach.DOMAIN_SEPARATOR();
 
@@ -66,11 +65,10 @@ describe("ReachV2", function () {
             defaultResponseTime,
             defaultKolFee,
             deadline,
-            nonce,
             proofSigner
         );
 
-        return reach.connect(from).deposit(
+        const tx = await reach.connect(from).deposit(
             identifier,
             amount,
             kolAddress,
@@ -78,10 +76,11 @@ describe("ReachV2", function () {
             defaultResponseTime,
             defaultKolFee,
             deadline,
-            nonce,
             signature,
             { value: amount }
         );
+        
+        return tx;  // Return the identifier
     }
 
     describe("Deployment", function () {
@@ -109,10 +108,7 @@ describe("ReachV2", function () {
             const identifier = "test-deposit-2";
             const currentBlockTime = await getCurrentBlockTimestamp();
             const deadline = currentBlockTime + 3600; // 1 hour from current block time
-            const nonce = 1;
-            ;
-            // process.exit(0);
-
+            
             const domainSeparator = await reach.DOMAIN_SEPARATOR();
 
             const signature = await generateSignature(
@@ -124,7 +120,6 @@ describe("ReachV2", function () {
                 defaultResponseTime,
                 defaultKolFee,
                 deadline,
-                nonce,
                 proofSigner
             );
 
@@ -136,7 +131,6 @@ describe("ReachV2", function () {
                 defaultResponseTime,
                 defaultKolFee,
                 deadline,
-                nonce,
                 signature,
                 { value: depositAmount }
             )).to.emit(reach, "PaymentDeposited");
@@ -151,31 +145,29 @@ describe("ReachV2", function () {
             const belowMinimum = ethers.parseEther("0.00000005");
             const currentBlockTime = await getCurrentBlockTimestamp();
             const deadline = currentBlockTime + 3600; // 1 hour from current block time
-            const nonce = 1;
+            const identifier = "test-below-minimum";
 
             const domainSeparator = await reach.DOMAIN_SEPARATOR();
             const signature = await generateSignature(
                 domainSeparator,
-                "test",
+                identifier,
                 belowMinimum,
                 user2.address,
                 user1.address,
                 defaultResponseTime,
                 defaultKolFee,
                 deadline,
-                nonce,
                 proofSigner
             );
 
             await expect(reach.connect(user1).deposit(
-                "test",
+                identifier,
                 belowMinimum,
                 user2.address,
                 user1.address,
                 defaultResponseTime,
                 defaultKolFee,
                 deadline,
-                nonce,
                 signature,
                 { value: belowMinimum }
             )).to.be.revertedWithCustomError(reach, "InsufficientPayment");
@@ -184,31 +176,29 @@ describe("ReachV2", function () {
         it("Should revert if KOL address is zero", async function () {
             const currentBlockTime = await getCurrentBlockTimestamp();
             const deadline = currentBlockTime + 3600; // 1 hour from current block time
-            const nonce = 1;
+            const identifier = "test-zero-address";
 
             const domainSeparator = await reach.DOMAIN_SEPARATOR();
             const signature = await generateSignature(
                 domainSeparator,
-                "test",
+                identifier,
                 ethers.parseEther("1.0"),
                 ethers.ZeroAddress,
                 user1.address,
                 defaultResponseTime,
                 defaultKolFee,
                 deadline,
-                nonce,
                 proofSigner
             );
 
             await expect(reach.connect(user1).deposit(
-                "test",
+                identifier,
                 ethers.parseEther("1.0"),
                 ethers.ZeroAddress,
                 user1.address,
                 defaultResponseTime,
                 defaultKolFee,
                 deadline,
-                nonce,
                 signature,
                 { value: ethers.parseEther("1.0") }
             )).to.be.revertedWithCustomError(reach, "ZeroAddress");
@@ -217,31 +207,29 @@ describe("ReachV2", function () {
         it("Should revert if user tries to pay themselves", async function () {
             const currentBlockTime = await getCurrentBlockTimestamp();
             const deadline = currentBlockTime + 3600; // 1 hour from current block time
-            const nonce = 1;
+            const identifier = "test-self-payment";
 
             const domainSeparator = await reach.DOMAIN_SEPARATOR();
             const signature = await generateSignature(
                 domainSeparator,
-                "test",
+                identifier,
                 ethers.parseEther("1.0"),
                 user1.address,
                 user1.address,
                 defaultResponseTime,
                 defaultKolFee,
                 deadline,
-                nonce,
                 proofSigner
             );
 
             await expect(reach.connect(user1).deposit(
-                "test",
+                identifier,
                 ethers.parseEther("1.0"),
                 user1.address,
                 user1.address,
                 defaultResponseTime,
                 defaultKolFee,
                 deadline,
-                nonce,
                 signature,
                 { value: ethers.parseEther("1.0") }
             )).to.be.revertedWithCustomError(reach, "CannotPaySelf");
@@ -272,7 +260,6 @@ describe("ReachV2", function () {
             const identifier = "test-with-tip";
             const currentBlockTime = await getCurrentBlockTimestamp();
             const deadline = currentBlockTime + 3600; // 1 hour from current block time
-            const nonce = nonceCounter++;
 
             const domainSeparator = await reach.DOMAIN_SEPARATOR();
             
@@ -285,7 +272,6 @@ describe("ReachV2", function () {
                 defaultResponseTime,
                 defaultKolFee,
                 deadline,
-                nonce,
                 proofSigner
             );
 
@@ -307,7 +293,6 @@ describe("ReachV2", function () {
                 defaultResponseTime,
                 defaultKolFee,
                 deadline,
-                nonce,
                 signature,
                 { value: totalAmount } // Sending more ETH than required
             )).to.emit(reach, "PaymentDeposited");
@@ -336,7 +321,6 @@ describe("ReachV2", function () {
             const identifier = "test-insufficient-value";
             const currentBlockTime = await getCurrentBlockTimestamp();
             const deadline = currentBlockTime + 3600; // 1 hour from current block time
-            const nonce = nonceCounter++;
 
             const domainSeparator = await reach.DOMAIN_SEPARATOR();
             
@@ -349,7 +333,6 @@ describe("ReachV2", function () {
                 defaultResponseTime,
                 defaultKolFee,
                 deadline,
-                nonce,
                 proofSigner
             );
 
@@ -362,19 +345,22 @@ describe("ReachV2", function () {
                 defaultResponseTime,
                 defaultKolFee,
                 deadline,
-                nonce,
                 signature,
                 { value: sentAmount } // Sending less ETH than required
             )).to.be.revertedWithCustomError(reach, "InsufficientPayment");
         });
 
         describe("Release Funds", function () {
+            let identifier;  // Add a variable to store the actual identifier
+            
             beforeEach(async function () {
                 // Grant ENGINE_ROLE to deployer for testing
                 await authority.grantRole(ethers.keccak256(ethers.toUtf8Bytes("ENGINE_ROLE")), deployer.address);
 
-                // Create a deposit
+                // Create a deposit and store the identifier
                 await makeDeposit(user1, "test-release", user2.address, user1.address, ethers.parseEther("1.0"));
+                const deposit = await reach.getDepositDetails(1);
+                identifier = deposit.identifier;
             });
 
             it("Should release funds to KOL", async function () {
@@ -389,7 +375,7 @@ describe("ReachV2", function () {
 
                 await expect(reach.release(depositId))
                     .to.emit(reach, "FundsReleased")
-                    .withArgs(depositId, "test-release", user2.address, kolAmount);
+                    .withArgs(depositId, identifier, user2.address, kolAmount);  // Use the stored identifier
 
                 const feesReceiverAfter = await ethers.provider.getBalance(FEES_RECEIVER_ADDRESS);
                 const kolAfter = await ethers.provider.getBalance(user2.address);
@@ -490,7 +476,7 @@ describe("ReachV2", function () {
                 expect(isPaused).to.be.true;
 
                 await expect(
-                    makeDeposit(user1, "test-during-pause", user2.address, user1.address, ethers.parseEther("1.0"))
+                    makeDeposit(user1, "test-during-pause-2", user2.address, user1.address, ethers.parseEther("1.0"))
                 ).to.be.reverted;
 
                 await reach.unpause();
@@ -499,7 +485,7 @@ describe("ReachV2", function () {
                 expect(isUnpaused).to.be.false;
 
                 await expect(
-                    makeDeposit(user1, "test-after-unpause", user2.address, user1.address, ethers.parseEther("1.0"))
+                    makeDeposit(user1, "test-after-unpause-3", user2.address, user1.address, ethers.parseEther("1.0"))
                 ).to.not.be.reverted;
             });
 
@@ -722,6 +708,52 @@ describe("ReachV2", function () {
 
                 await expect(makeDeposit(user1, "unpaused-deposit", user2.address, user1.address, ethers.parseEther("1.0")))
                     .to.not.be.reverted;
+            });
+
+            it("Should revert when using the same identifier twice", async function() {
+                const depositAmount = ethers.parseEther("1.0");
+                const identifier = "duplicate-identifier";
+                const currentBlockTime = await getCurrentBlockTimestamp();
+                const deadline = currentBlockTime + 3600;
+                
+                const domainSeparator = await reach.DOMAIN_SEPARATOR();
+                const signature = await generateSignature(
+                    domainSeparator,
+                    identifier,
+                    depositAmount,
+                    user2.address,
+                    user1.address,
+                    defaultResponseTime,
+                    defaultKolFee,
+                    deadline,
+                    proofSigner
+                );
+                
+                // First deposit with this identifier should work
+                await reach.connect(user1).deposit(
+                    identifier,
+                    depositAmount,
+                    user2.address,
+                    user1.address,
+                    defaultResponseTime,
+                    defaultKolFee,
+                    deadline,
+                    signature,
+                    { value: depositAmount }
+                );
+                
+                // Second deposit with same identifier should fail
+                await expect(reach.connect(user1).deposit(
+                    identifier,
+                    depositAmount,
+                    user2.address,
+                    user1.address,
+                    defaultResponseTime,
+                    defaultKolFee,
+                    deadline,
+                    signature,
+                    { value: depositAmount }
+                )).to.be.revertedWithCustomError(reach, "IdentifierAlreadyUsed");
             });
         });
 
@@ -976,7 +1008,6 @@ describe("ReachV2", function () {
                 const identifier = `refund-${refundPercentage}-test`;
                 const currentBlockTime = await getCurrentBlockTimestamp();
                 const deadline = currentBlockTime + 3600; // 1 hour from current block time
-                const nonce = nonceCounter++;
                 const responseTime = 5 * 24 * 60 * 60; // 5 days in seconds
 
                 const domainSeparator = await reach.DOMAIN_SEPARATOR();
@@ -990,7 +1021,6 @@ describe("ReachV2", function () {
                     responseTime,
                     refundPercentage,
                     deadline,
-                    nonce,
                     proofSigner
                 );
 
@@ -1002,7 +1032,6 @@ describe("ReachV2", function () {
                     responseTime,
                     refundPercentage,
                     deadline,
-                    nonce,
                     signature,
                     { value: amount }
                 );
@@ -1163,7 +1192,6 @@ describe("ReachV2", function () {
                 const identifier = `refund-${refundPercentage}-test`;
                 const currentBlockTime = await getCurrentBlockTimestamp();
                 const deadline = currentBlockTime + 3600;
-                const nonce = nonceCounter++;
                 const responseTime = 5 * 24 * 60 * 60;
 
                 const domainSeparator = await reach.DOMAIN_SEPARATOR();
@@ -1177,7 +1205,6 @@ describe("ReachV2", function () {
                     responseTime,
                     refundPercentage,
                     deadline,
-                    nonce,
                     proofSigner
                 );
 
@@ -1189,7 +1216,6 @@ describe("ReachV2", function () {
                     responseTime,
                     refundPercentage,
                     deadline,
-                    nonce,
                     signature,
                     { value: amount }
                 );
@@ -1305,7 +1331,6 @@ describe("ReachV2", function () {
                 const identifier = `refund-${refundPercentage}-test`;
                 const currentBlockTime = await getCurrentBlockTimestamp();
                 const deadline = currentBlockTime + 3600;
-                const nonce = nonceCounter++;
                 const responseTime = 5 * 24 * 60 * 60;
 
                 const domainSeparator = await reach.DOMAIN_SEPARATOR();
@@ -1319,7 +1344,6 @@ describe("ReachV2", function () {
                     responseTime,
                     refundPercentage,
                     deadline,
-                    nonce,
                     proofSigner
                 );
 
@@ -1331,7 +1355,6 @@ describe("ReachV2", function () {
                     responseTime,
                     refundPercentage,
                     deadline,
-                    nonce,
                     signature,
                     { value: amount }
                 );
@@ -1436,11 +1459,9 @@ describe("ReachV2", function () {
                 await authority.grantRole(ethers.keccak256(ethers.toUtf8Bytes("ENGINE_ROLE")), deployer.address);
             });
 
-            async function makeDepositWithCustomResponseTime(responseTime, amount) {
-                const identifier = `response-time-${responseTime}-test`;
+            async function makeDepositWithCustomResponseTime(identifier, responseTime, amount) {
                 const currentBlockTime = await getCurrentBlockTimestamp();
                 const deadline = currentBlockTime + 3600; // 1 hour from current block time
-                const nonce = nonceCounter++;
                 const refundPercentage = 50; // 50% refund rate for testing
 
                 const domainSeparator = await reach.DOMAIN_SEPARATOR();
@@ -1454,7 +1475,6 @@ describe("ReachV2", function () {
                     responseTime,
                     refundPercentage,
                     deadline,
-                    nonce,
                     proofSigner
                 );
 
@@ -1466,7 +1486,6 @@ describe("ReachV2", function () {
                     responseTime,
                     refundPercentage,
                     deadline,
-                    nonce,
                     signature,
                     { value: amount }
                 );
@@ -1476,7 +1495,7 @@ describe("ReachV2", function () {
                 const depositAmount = ethers.parseEther("1.0");
                 const responseTime = 3600; // 1 hour in seconds
 
-                await makeDepositWithCustomResponseTime(responseTime, depositAmount);
+                await makeDepositWithCustomResponseTime('custom-response-time-1hour', responseTime, depositAmount);
 
                 // Verify deposit was created with correct response time
                 const deposit = await reach.getDepositDetails(1);
@@ -1494,7 +1513,7 @@ describe("ReachV2", function () {
                 const depositAmount = ethers.parseEther("1.0");
                 const responseTime = 30 * 24 * 60 * 60; // 30 days in seconds
 
-                await makeDepositWithCustomResponseTime(responseTime, depositAmount);
+                await makeDepositWithCustomResponseTime('custom-response-time-30days', responseTime, depositAmount);
 
                 // Verify deposit was created with correct response time
                 const deposit = await reach.getDepositDetails(1);
@@ -1512,7 +1531,7 @@ describe("ReachV2", function () {
                 const depositAmount = ethers.parseEther("1.0");
                 const responseTime = 90 * 24 * 60 * 60; // 90 days in seconds
 
-                await makeDepositWithCustomResponseTime(responseTime, depositAmount);
+                await makeDepositWithCustomResponseTime('custom-response-time-90days', responseTime, depositAmount);
 
                 // Verify deposit was created with correct response time
                 const deposit = await reach.getDepositDetails(1);
@@ -1531,7 +1550,7 @@ describe("ReachV2", function () {
                 const responseTime = 90 * 24 * 60 * 60 + 1; // 90 days + 1 second
 
                 await expect(
-                    makeDepositWithCustomResponseTime(responseTime, depositAmount)
+                    makeDepositWithCustomResponseTime('custom-response-time-90+1sec', responseTime, depositAmount)
                 ).to.be.revertedWithCustomError(reach, "InvalidResponseTime");
             });
 
@@ -1539,7 +1558,7 @@ describe("ReachV2", function () {
                 const depositAmount = ethers.parseEther("1.0");
                 const responseTime = 12 * 60 * 60; // 12 hours
 
-                await makeDepositWithCustomResponseTime(responseTime, depositAmount);
+                await makeDepositWithCustomResponseTime('custom-response-time-12hours', responseTime, depositAmount);
 
                 // Fast forward to just after response time but before 4-hour window
                 await ethers.provider.send("evm_increaseTime", [responseTime + 1]);
@@ -1561,14 +1580,14 @@ describe("ReachV2", function () {
                 const depositAmount = ethers.parseEther("1.0");
                 const responseTime = 600; // 10 minutes
 
-                await makeDepositWithCustomResponseTime(responseTime, depositAmount);
+                await makeDepositWithCustomResponseTime('custom-response-time-1', responseTime, depositAmount);
 
                 // Try to refund before response time has elapsed (should fail)
                 await expect(reach.refund(1))
                     .to.not.be.reverted; // Actually this should work since we have ENGINE_ROLE
 
                 // Create another deposit for testing timing
-                await makeDepositWithCustomResponseTime(responseTime, depositAmount);
+                await makeDepositWithCustomResponseTime('custom-response-time-2', responseTime, depositAmount);
 
                 // Fast forward just past response time
                 await ethers.provider.send("evm_increaseTime", [responseTime + 1]);
