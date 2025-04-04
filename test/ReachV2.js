@@ -265,6 +265,108 @@ describe("ReachV2", function () {
             expect(kolAfter - kolBefore).to.equal(kolInstantAmount);
         });
 
+        it("Should accept deposits where msg.value is greater than amount", async function () {
+            const requiredAmount = ethers.parseEther("1.5");
+            const tipAmount = ethers.parseEther("0.5"); 
+            const totalAmount = requiredAmount + tipAmount;
+            const identifier = "test-with-tip";
+            const currentBlockTime = await getCurrentBlockTimestamp();
+            const deadline = currentBlockTime + 3600; // 1 hour from current block time
+            const nonce = nonceCounter++;
+
+            const domainSeparator = await reach.DOMAIN_SEPARATOR();
+            
+            const signature = await generateSignature(
+                domainSeparator,
+                identifier,
+                requiredAmount, // Note: signature uses the required amount
+                user2.address,
+                user1.address,
+                defaultResponseTime,
+                defaultKolFee,
+                deadline,
+                nonce,
+                proofSigner
+            );
+
+            // Calculate expected distributions based on the required amount, not the total amount
+            const instantAmount = totalAmount / 2n;
+            const fee = (instantAmount * 10n) / 100n;
+            const kolInstantAmount = instantAmount - fee;
+            
+            const feesReceiverBefore = await ethers.provider.getBalance(FEES_RECEIVER_ADDRESS);
+            const kolBefore = await ethers.provider.getBalance(user2.address);
+            const contractBefore = await ethers.provider.getBalance(await reach.getAddress());
+
+            // Send more than the required amount
+            await expect(reach.connect(user1).deposit(
+                identifier,
+                requiredAmount,
+                user2.address,
+                user1.address,
+                defaultResponseTime,
+                defaultKolFee,
+                deadline,
+                nonce,
+                signature,
+                { value: totalAmount } // Sending more ETH than required
+            )).to.emit(reach, "PaymentDeposited");
+
+            const feesReceiverAfter = await ethers.provider.getBalance(FEES_RECEIVER_ADDRESS);
+            const kolAfter = await ethers.provider.getBalance(user2.address);
+            const contractAfter = await ethers.provider.getBalance(await reach.getAddress());
+
+            // Verify distributions are based on required amount, not total sent
+            expect(feesReceiverAfter - feesReceiverBefore).to.equal(fee);
+            expect(kolAfter - kolBefore).to.equal(kolInstantAmount);
+            
+            // Verify the contract balance increased by the escrow amount + tip
+            const expectedEscrowAmount = totalAmount / 2n; // 50% in escrow
+            const expectedContractBalance = expectedEscrowAmount;
+            expect(contractAfter - contractBefore).to.equal(expectedContractBalance);
+            
+            // Verify deposit details
+            const deposit = await reach.getDepositDetails(1);
+            expect(deposit.escrowAmount).to.equal(expectedEscrowAmount);
+        });
+
+        it("Should revert if msg.value is less than amount", async function () {
+            const requestedAmount = ethers.parseEther("1.0");
+            const sentAmount = ethers.parseEther("0.5"); // Half of what's required
+            const identifier = "test-insufficient-value";
+            const currentBlockTime = await getCurrentBlockTimestamp();
+            const deadline = currentBlockTime + 3600; // 1 hour from current block time
+            const nonce = nonceCounter++;
+
+            const domainSeparator = await reach.DOMAIN_SEPARATOR();
+            
+            const signature = await generateSignature(
+                domainSeparator,
+                identifier,
+                requestedAmount, // Note: signature uses the full requested amount
+                user2.address,
+                user1.address,
+                defaultResponseTime,
+                defaultKolFee,
+                deadline,
+                nonce,
+                proofSigner
+            );
+
+            // Send less ETH than the requested amount - should revert
+            await expect(reach.connect(user1).deposit(
+                identifier,
+                requestedAmount,
+                user2.address,
+                user1.address,
+                defaultResponseTime,
+                defaultKolFee,
+                deadline,
+                nonce,
+                signature,
+                { value: sentAmount } // Sending less ETH than required
+            )).to.be.revertedWithCustomError(reach, "InsufficientPayment");
+        });
 
         describe("Release Funds", function () {
             beforeEach(async function () {
