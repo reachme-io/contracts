@@ -1597,6 +1597,162 @@ describe("ReachV2", function () {
                 await expect(reach.refund(2)).to.not.be.reverted;
             });
         });
+
+        describe("Domain Separator Update", function () {
+            beforeEach(async function () {
+                // Grant ADMIN_ROLE to deployer for testing
+                await authority.grantRole(ethers.keccak256(ethers.toUtf8Bytes("ADMIN_ROLE")), deployer.address);
+            });
+
+            it("Should update the domain separator correctly", async function () {
+                const newName = "NewReach";
+                const newVersion = "3";
+
+                const oldDomainSeparator = await reach.DOMAIN_SEPARATOR();
+
+                await reach.updateDomainSeparator(newName, newVersion);
+
+                const newDomainSeparator = await reach.DOMAIN_SEPARATOR();
+
+                expect(newDomainSeparator).to.not.equal(oldDomainSeparator);
+
+                // Verify the new domain separator is calculated correctly
+                const expectedDomainSeparator = ethers.keccak256(
+                    ethers.AbiCoder.defaultAbiCoder().encode(
+                        ["bytes32", "bytes32", "bytes32", "uint256", "address"],
+                        [
+                            ethers.keccak256(ethers.toUtf8Bytes("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")),
+                            ethers.keccak256(ethers.toUtf8Bytes(newName)),
+                            ethers.keccak256(ethers.toUtf8Bytes(newVersion)),
+                            await ethers.provider.getNetwork().then(network => network.chainId),
+                            reach.target
+                        ]
+                    )
+                );
+                
+                expect(newDomainSeparator).to.equal(expectedDomainSeparator);
+            });
+
+            it("Should revert if caller doesn't have ADMIN_ROLE", async function () {
+                const newName = "NewReach";
+                const newVersion = "3";
+
+                await expect(
+                    reach.connect(user1).updateDomainSeparator(newName, newVersion)
+                ).to.be.revertedWithCustomError(reach, "Unauthorized");
+            });
+        });
+
+        describe("Signature Integrity", function () {
+            it("Should revert with an invalid signature", async function () {
+                const depositAmount = ethers.parseEther("1.0");
+                const identifier = "invalid-signature-test";
+                const currentBlockTime = await getCurrentBlockTimestamp();
+                const deadline = currentBlockTime + 3600; // 1 hour from current block time
+
+                const domainSeparator = await reach.DOMAIN_SEPARATOR();
+
+                // Generate a valid signature
+                const validSignature = await generateSignature(
+                    domainSeparator,
+                    identifier,
+                    depositAmount,
+                    user2.address,
+                    user1.address,
+                    defaultResponseTime,
+                    defaultKolFee,
+                    deadline,
+                    proofSigner
+                );
+
+                // Tamper with the signature
+                const tamperedSignature = validSignature.slice(0, -2) + "00";
+
+                await expect(reach.connect(user1).deposit(
+                    identifier,
+                    depositAmount,
+                    user2.address,
+                    user1.address,
+                    defaultResponseTime,
+                    defaultKolFee,
+                    deadline,
+                    tamperedSignature,
+                    { value: depositAmount }
+                )).to.be.revertedWithCustomError(reach, "ECDSAInvalidSignature");
+            });
+
+            it("Should revert if the message is tampered with", async function () {
+                const depositAmount = ethers.parseEther("1.0");
+                const identifier = "tampered-message-test";
+                const currentBlockTime = await getCurrentBlockTimestamp();
+                const deadline = currentBlockTime + 3600; // 1 hour from current block time
+
+                const domainSeparator = await reach.DOMAIN_SEPARATOR();
+
+                // Generate a valid signature
+                const validSignature = await generateSignature(
+                    domainSeparator,
+                    identifier,
+                    depositAmount,
+                    user2.address,
+                    user1.address,
+                    defaultResponseTime,
+                    defaultKolFee,
+                    deadline,
+                    proofSigner
+                );
+
+                // Tamper with the message by changing the amount
+                const tamperedAmount = ethers.parseEther("2.0");
+
+                await expect(reach.connect(user1).deposit(
+                    identifier,
+                    tamperedAmount, // Tampered amount
+                    user2.address,
+                    user1.address,
+                    defaultResponseTime,
+                    defaultKolFee,
+                    deadline,
+                    validSignature,
+                    { value: tamperedAmount }
+                )).to.be.revertedWithCustomError(reach, "InvalidSigner");
+            });
+
+            it("Should revert if the signer is incorrect", async function () {
+                const depositAmount = ethers.parseEther("1.0");
+                const identifier = "incorrect-signer-test";
+                const currentBlockTime = await getCurrentBlockTimestamp();
+                const deadline = currentBlockTime + 3600; // 1 hour from current block time
+
+                const domainSeparator = await reach.DOMAIN_SEPARATOR();
+
+                // Generate a signature with an incorrect signer
+                const incorrectSigner = user1; // Use user1 instead of proofSigner
+                const invalidSignature = await generateSignature(
+                    domainSeparator,
+                    identifier,
+                    depositAmount,
+                    user2.address,
+                    user1.address,
+                    defaultResponseTime,
+                    defaultKolFee,
+                    deadline,
+                    incorrectSigner
+                );
+
+                await expect(reach.connect(user1).deposit(
+                    identifier,
+                    depositAmount,
+                    user2.address,
+                    user1.address,
+                    defaultResponseTime,
+                    defaultKolFee,
+                    deadline,
+                    invalidSignature,
+                    { value: depositAmount }
+                )).to.be.revertedWithCustomError(reach, "InvalidSigner");
+            });
+        });
     })
 
 })
