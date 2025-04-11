@@ -12,17 +12,17 @@ contract ReachV2 is Pausable, ReentrancyGuard {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant ENGINE_ROLE = keccak256("ENGINE_ROLE");
 
-    uint256 public constant PERCENTAGE_BASE = 100;
-    uint256 public constant MAXIMUM_PERCENTAGE = 100;
-    uint256 public constant MINIMUM_PERCENTAGE = 0;
-    uint256 public constant MAX_FEE_PERCENTAGE = 20;
-    uint256 public constant MIN_FEE_PERCENTAGE = 1;
+    uint256 public constant PERCENTAGE_BASE = 10000;
+    uint256 public constant MAXIMUM_PERCENTAGE = 10000; // 100%
+    uint256 public constant MINIMUM_PERCENTAGE = 0;     // 0%
+    uint256 public constant MAX_FEE_PERCENTAGE = 2000;  // 20%
+    uint256 public constant MIN_FEE_PERCENTAGE = 100;   // 1%
     uint256 public constant MIN_PAYMENT_THRESHOLD = 0.00001 ether;
     uint256 public constant MAX_RESPONSE_TIME = 90 days;
 
     ReachAuthority public authority;
 
-    uint256 public platformFee = 10;
+    uint256 public platformFee = 1000; // 10%
     uint256 public minimumPayment = 0.001 ether;
 
     uint256 public depositId;
@@ -38,7 +38,6 @@ contract ReachV2 is Pausable, ReentrancyGuard {
         address requester;
         address recipient;
         uint256 responseTime;
-        uint256 refundPercentage;
         uint256 escrowAmount;
         uint256 timestamp;
         bool released;
@@ -205,7 +204,6 @@ contract ReachV2 is Pausable, ReentrancyGuard {
             requester: _requester,
             recipient: _kol,
             responseTime: _responseTime,
-            refundPercentage: _refundPercentage,
             escrowAmount: escrowAmount,
             timestamp: block.timestamp,
             released: false,
